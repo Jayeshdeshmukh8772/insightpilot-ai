@@ -1,0 +1,16 @@
+observation_id,city,recorded_at,temperature_c,humidity_pct,wind_speed_kmh,precipitation_mm,conditions
+1,Pune,2024-01-15,28.4,62,12.5,0.0,Clear
+2,Mumbai,2024-01-15,31.2,78,18.2,2.4,Cloudy
+3,Delhi,2024-01-15,18.6,45,8.1,0.0,Clear
+4,Pune,2024-01-16,27.1,58,10.3,0.0,Clear
+5,Bangalore,2024-01-16,26.8,70,14.0,1.2,Partly Cloudy
+6,Mumbai,2024-01-16,30.5,82,22.1,5.6,Rain
+7,Chennai,2024-01-17,32.0,75,16.4,0.0,Hazy
+8,Pune,2024-01-17,29.0,60,11.0,0.0,Clear
+9,Delhi,2024-01-17,17.2,48,9.5,0.0,Clear
+10,Kolkata,2024-01-18,27.5,80,13.8,3.1,Cloudy
+11,Pune,2024-01-18,26.3,65,15.2,4.5,Rain
+12,Hyderabad,2024-01-18,28.9,55,10.0,0.0,Clear
+13,Mumbai,2024-01-19,29.8,76,19.0,1.0,Partly Cloudy
+14,Bangalore,2024-01-19,25.4,68,12.6,0.0,Clear
+15,Pune,2024-01-19,27.8,61,11.4,0.0,Clear

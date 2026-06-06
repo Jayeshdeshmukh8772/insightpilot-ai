@@ -1,0 +1,13 @@
+sku_id,category,warehouse,units_on_hand,unit_cost,reorder_level,last_restocked
+SKU-1001,Electronics,WH-North,240,45.50,100,2024-01-10
+SKU-1002,Electronics,WH-South,85,120.00,50,2024-01-05
+SKU-2001,Apparel,WH-North,510,18.25,200,2024-01-12
+SKU-2002,Apparel,WH-East,42,22.00,80,2023-12-28
+SKU-3001,Grocery,WH-South,890,3.75,300,2024-01-14
+SKU-3002,Grocery,WH-North,120,4.10,150,2024-01-08
+SKU-4001,Furniture,WH-East,35,210.00,20,2024-01-02
+SKU-4002,Furniture,WH-South,18,185.50,15,2023-12-20
+SKU-5001,Electronics,WH-East,156,89.99,75,2024-01-11
+SKU-5002,Apparel,WH-South,320,15.80,120,2024-01-09
+SKU-6001,Grocery,WH-East,670,2.95,250,2024-01-13
+SKU-6002,Electronics,WH-North,12,340.00,25,2023-12-15
