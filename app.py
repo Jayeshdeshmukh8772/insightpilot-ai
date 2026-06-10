@@ -111,6 +111,7 @@ def _init_state():
         "last_error": None,
         "active_tab": 0,
         "_last_file": "",
+        "pdf_report_bytes": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -145,7 +146,9 @@ def _load_dataset(df: pd.DataFrame, filename: str):
     st.session_state.df_fingerprint = df_fingerprint(df)
     st.session_state.df_cache_bytes = serialize_df_for_cache(df)
     with st.spinner("Profiling dataset locally…"):
-        st.session_state.profile = get_or_build_profile(df, filename)
+        st.session_state.profile = get_or_build_profile(
+            df, filename, st.session_state.df_fingerprint, st.session_state.df_cache_bytes
+        )
     st.session_state.local_summary = build_local_dataset_summary(st.session_state.profile)
     st.session_state.suggested_questions = generate_suggested_questions(st.session_state.profile)
     st.session_state.qa_history = []
@@ -160,6 +163,7 @@ def _load_dataset(df: pd.DataFrame, filename: str):
     st.session_state.insights = None
     st.session_state.chart_explanation = None
     st.session_state.last_error = None
+    st.session_state.pdf_report_bytes = None
     _set_status("dataset", f"Loaded {filename}", "ok")
 
 
@@ -329,7 +333,9 @@ def _save_to_history():
         try:
             st.session_state.chart_images.append(fig_to_bytes(st.session_state.chart))
         except Exception:
-            pass
+            st.session_state.chart_images.append(None)
+    else:
+        st.session_state.chart_images.append(None)
 
 
 # ── Sidebar ───────────────────────────────────────────────────────
@@ -398,10 +404,33 @@ if st.session_state.df is None:
         "Upload **any** CSV, Excel, JSON, or Parquet file. "
         "The platform profiles your schema locally, then you control every AI step."
     )
+    st.markdown("<br/>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
-    c1.markdown("**1. Profile locally** — no API calls on upload")
-    c2.markdown("**2. Generate & run queries** — learn SQL/Pandas step by step")
-    c3.markdown("**3. Insights on demand** — pay for AI only when you click")
+    with c1:
+        st.markdown(
+            '<div class="panel" style="text-align:center; padding:1.5rem 1rem;">'
+            '<h3 style="color:var(--indigo); margin-top:0; margin-bottom:0.5rem; font-size:1.1rem;">1. Profile locally</h3>'
+            '<p style="color:var(--muted); font-size:0.85rem; margin-bottom:0;">No API calls on upload</p>'
+            '</div>', 
+            unsafe_allow_html=True
+        )
+    with c2:
+        st.markdown(
+            '<div class="panel" style="text-align:center; padding:1.5rem 1rem;">'
+            '<h3 style="color:var(--cyan); margin-top:0; margin-bottom:0.5rem; font-size:1.1rem;">2. Generate & run</h3>'
+            '<p style="color:var(--muted); font-size:0.85rem; margin-bottom:0;">Learn SQL/Pandas step by step</p>'
+            '</div>', 
+            unsafe_allow_html=True
+        )
+    with c3:
+        st.markdown(
+            '<div class="panel" style="text-align:center; padding:1.5rem 1rem;">'
+            '<h3 style="color:var(--amber); margin-top:0; margin-bottom:0.5rem; font-size:1.1rem;">3. Insights on demand</h3>'
+            '<p style="color:var(--muted); font-size:0.85rem; margin-bottom:0;">Pay for AI only when you click</p>'
+            '</div>', 
+            unsafe_allow_html=True
+        )
+    st.markdown("<br/>", unsafe_allow_html=True)
     st.info("Set `LLM_PROVIDER=groq|gemini|openrouter` in `.env` to choose your AI provider.")
 else:
     profile = st.session_state.profile
@@ -574,18 +603,59 @@ else:
         else:
             st.info("Generate an executive summary on demand. Requires at least one saved analysis for best results.")
 
-        if st.session_state.qa_history and st.button("📄 Export PDF Report", use_container_width=True):
+        if st.button("📄 Prepare PDF Report", use_container_width=True):
             with st.spinner("Building PDF…"):
                 summary = st.session_state.exec_summary or "Analysis session report."
-                pdf = generate_pdf_report(
+                
+                # Auto-include current active analysis if it hasn't been saved
+                history_to_print = list(st.session_state.qa_history)
+                chart_images_to_print = list(st.session_state.chart_images)
+                
+                if st.session_state.result_df is not None:
+                    is_saved = False
+                    if history_to_print:
+                        last_saved = history_to_print[-1]
+                        if last_saved.get("question") == st.session_state.current_question:
+                            # Update chart/insights if they were generated AFTER saving
+                            if (last_saved.get("chart") is None and st.session_state.chart is not None) or \
+                               (last_saved.get("insight") is None and st.session_state.insights is not None):
+                                history_to_print[-1] = history_to_print[-1].copy()
+                                history_to_print[-1]["chart"] = st.session_state.chart
+                                history_to_print[-1]["insight"] = st.session_state.insights
+                                if st.session_state.chart:
+                                    try:
+                                        chart_images_to_print[-1] = fig_to_bytes(st.session_state.chart)
+                                    except Exception:
+                                        pass
+                            is_saved = True
+                            
+                    if not is_saved:
+                        current_entry = {
+                            "question": st.session_state.current_question or "Current Analysis",
+                            "code_info": st.session_state.generated_query or {},
+                            "insight": st.session_state.insights or {},
+                        }
+                        history_to_print.append(current_entry)
+                        if st.session_state.chart:
+                            try:
+                                chart_images_to_print.append(fig_to_bytes(st.session_state.chart))
+                            except Exception:
+                                chart_images_to_print.append(None)
+                        else:
+                            chart_images_to_print.append(None)
+
+                st.session_state.pdf_report_bytes = generate_pdf_report(
                     profile,
-                    st.session_state.qa_history,
-                    st.session_state.chart_images,
+                    history_to_print,
+                    chart_images_to_print,
                     summary,
                 )
+        
+        if st.session_state.get("pdf_report_bytes"):
             st.download_button(
                 "⬇ Download PDF",
-                data=pdf,
+                data=st.session_state.pdf_report_bytes,
                 file_name=f"InsightPilot_{profile.get('filename', 'report').rsplit('.', 1)[0]}.pdf",
                 mime="application/pdf",
+                use_container_width=True,
             )

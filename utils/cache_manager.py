@@ -28,39 +28,33 @@ def df_fingerprint(df: pd.DataFrame) -> str:
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
-def cached_profile(df_fingerprint: str, df_bytes: bytes, filename: str) -> dict[str, Any]:
+def cached_profile(df_fingerprint: str, _df_bytes: bytes, filename: str) -> dict[str, Any]:
     """Cache dataset profiling by fingerprint."""
     import io
-    df = pd.read_parquet(io.BytesIO(df_bytes)) if df_bytes[:4] == b"PAR1" else pd.read_pickle(io.BytesIO(df_bytes))
+    df = pd.read_parquet(io.BytesIO(_df_bytes)) if _df_bytes[:4] == b"PAR1" else pd.read_pickle(io.BytesIO(_df_bytes))
     return profile_dataset(df, filename)
 
 
-def get_or_build_profile(df: pd.DataFrame, filename: str) -> dict[str, Any]:
-    """Profile with caching — serializes df for cache key."""
-    import io
-    buf = io.BytesIO()
-    try:
-        df.to_parquet(buf, index=False)
-        df_bytes = buf.getvalue()
-    except Exception:
-        buf = io.BytesIO()
-        df.to_pickle(buf)
-        df_bytes = buf.getvalue()
+def get_or_build_profile(df: pd.DataFrame, filename: str, fingerprint: Optional[str] = None, df_bytes: Optional[bytes] = None) -> dict[str, Any]:
+    """Profile with caching — serializes df for cache key if not provided."""
+    if fingerprint is None:
+        fingerprint = df_fingerprint(df)
+    if df_bytes is None:
+        df_bytes = serialize_df_for_cache(df)
 
-    fingerprint = df_fingerprint(df)
     return cached_profile(fingerprint, df_bytes, filename)
 
 
 @st.cache_data(show_spinner=False, ttl=1800)
-def cached_query_result(query_hash: str, df_fingerprint: str, code: str, code_type: str, df_bytes: bytes):
+def cached_query_result(query_hash: str, df_fingerprint: str, code: str, code_type: str, _df_bytes: bytes):
     """Cache query execution results."""
     import io
     from agents.execution_agent import execute_query
 
     try:
-        df = pd.read_parquet(io.BytesIO(df_bytes))
+        df = pd.read_parquet(io.BytesIO(_df_bytes))
     except Exception:
-        df = pd.read_pickle(io.BytesIO(df_bytes))
+        df = pd.read_pickle(io.BytesIO(_df_bytes))
 
     return execute_query(df, code, code_type)
 

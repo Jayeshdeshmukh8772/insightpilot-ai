@@ -353,15 +353,14 @@ def _analysis_section(qa_history: List[Dict], chart_images: List[bytes], styles:
             items.append(Paragraph(code_text.replace("\n", "<br/>"), styles["code"]))
         
         # Chart image
-        if chart_idx < len(chart_images) and chart_images[chart_idx]:
+        if (i - 1) < len(chart_images) and chart_images[i - 1]:
             try:
-                img_buf = io.BytesIO(chart_images[chart_idx])
+                img_buf = io.BytesIO(chart_images[i - 1])
                 img = Image(img_buf, width=5.5 * inch, height=2.8 * inch)
                 items.append(Spacer(1, 8))
                 items.append(img)
-                chart_idx += 1
             except Exception:
-                chart_idx += 1
+                pass
         
         # Insights
         if insight:

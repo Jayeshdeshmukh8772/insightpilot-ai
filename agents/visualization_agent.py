@@ -115,7 +115,7 @@ def create_visualization(
         return _create_table(result, question), "table", None
 
     if chart_type in ("bar", "horizontal_bar", "line", "scatter", "histogram", "pie", "heatmap", "box", "area"):
-        if chart_type in ("bar", "horizontal_bar", "scatter", "heatmap", "box") and not numeric_cols:
+        if chart_type in ("scatter", "heatmap", "box") and not numeric_cols:
             return None, chart_type, "Dataset contains no numeric columns for this chart type."
 
     try:
